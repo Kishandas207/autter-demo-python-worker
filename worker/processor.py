@@ -14,6 +14,9 @@ def read_upload(path: str):
 
 
 def process_job(job):
+    if job.status == "complete":
+        return
+
     try:
         if job.kind == "file":
             job.payload["content"] = read_upload(job.payload["path"])
