@@ -26,10 +26,33 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev]"
 pytest
-uvicorn worker.api:app --reload
+cp -n .env.example .env
+uvicorn --env-file .env worker.api:app --reload
 ```
 
 The control API runs on `http://127.0.0.1:8000` by default.
+
+## Autter Runtime
+
+The FastAPI service exports OpenTelemetry traces, delta HTTP metrics, process
+RSS, and request summaries to
+`https://otlp.autter.dev`. Copy `.env.example` to `.env` if you do not already
+have a local `.env`, then set
+`AUTTER_RUNTIME_KEY` to a Runtime **server ingest key** in the local
+environment; never commit the key. The service leaves telemetry disabled when
+the variable is missing. Deployments should also set `GIT_SHA` to the full
+deployed commit SHA and `DEPLOYMENT_ENVIRONMENT` to a stable environment name.
+
+The worker emits always-sampled spans and operation summaries for processed
+jobs; successful HTTP traces use the OpenTelemetry 1% default sampler. The `llm`
+job kind is currently a local mock and does not make an external model call, so
+it does not produce LLM-provider telemetry. There is no database, outbound
+HTTP client, browser app, or external queue integration in this project.
+
+Errors and request summaries appear after instrumented traffic reaches the
+service; usage metrics are exported on a 60-second interval. See
+[`worker/observability.py`](./worker/observability.py) for the local
+instrumentation setup.
 
 Example job submission:
 
